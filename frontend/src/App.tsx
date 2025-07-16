@@ -13,6 +13,8 @@ import CategoryPage from './components/CategoryPage';
 import SearchResults from './pages/SearchResults';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import Success from './pages/Success';
+
 
 
 
@@ -44,6 +46,7 @@ function App() {
 
 <Route path="/forgot-password" element={<ForgotPassword />} />
 <Route path="/reset-password/:token" element={<ResetPassword />} />
+<Route path="/success" element={<Success />} />
 
 <Route path="/search" element={
   <ProtectedRoute>
