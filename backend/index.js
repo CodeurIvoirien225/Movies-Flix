@@ -333,8 +333,9 @@ app.post('/create-checkout-session', async (req, res) => {
         },
       ],
       mode: 'payment',
-      success_url: 'http://localhost:5173/success',
-      cancel_url: 'http://localhost:5173/subscription',
+      success_url: 'https://movies-flix.onrender.com/success',
+      cancel_url: 'https://movies-flix.onrender.com/subscription',
+      
     });
 
     res.json({ url: session.url });
