@@ -1,153 +1,120 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { Movie } from '../types';
-import { ArrowLeftIcon, PlayIcon, PauseIcon, SpeakerWaveIcon } from '@heroicons/react/24/solid';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { BASE_API_URL } from '../config';
 
-const Watch: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+const Watch = () => {
+  const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [movie, setMovie] = useState<Movie | null>(null);
+  const { id } = useParams();
   const [loading, setLoading] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [showControls, setShowControls] = useState(true);
+  const [movie, setMovie] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
+    const verifyAccess = async () => {
+      console.log("🚀 Début de verifyAccess");
+      const token = localStorage.getItem('token');
+      console.log("Token:", token);
 
-    if (user.subscription_status !== 'active') {
-      navigate('/subscription');
-      return;
-    }
+      if (!token) {
+        navigate('/signin');
+        return;
+      }
 
-    if (id) {
-      fetchMovie(id);
-    }
-  }, [id, user, navigate]);
+      try {
+        setLoading(true);
+        
+        // 1. Vérifier l'abonnement de l'utilisateur
+        const userRes = await fetch(`${BASE_API_URL}/api/user`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log("Réponse user:", userRes);
 
-  const fetchMovie = async (movieId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('movies')
-        .select('*')
-        .eq('id', movieId)
-        .single();
+        if (!userRes.ok) throw new Error('Échec de récupération des infos utilisateur');
+        
+        const userData = await userRes.json();
+        console.log("Données utilisateur complètes:", userData);
+        const isSubscribed = userData.is_subscribed === 1;
+        console.log("Abonnement vérifié:", isSubscribed)
 
-      if (error) throw error;
-      setMovie(data);
-    } catch (error) {
-      console.error('Error fetching movie:', error);
-      navigate('/');
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (!isSubscribed) {
+          navigate('/subscription');
+          return;
+        }
 
-  const togglePlayPause = () => {
-    setIsPlaying(!isPlaying);
-  };
+        // 2. Récupérer le film depuis l'API si pas dans location.state
+        let movieData = location.state?.movie;
+        
+        if (!movieData && id) {
+          const movieRes = await fetch(`${BASE_API_URL}/api/movies/${id}`);
+          if (!movieRes.ok) throw new Error('Film non trouvé');
+          movieData = await movieRes.json();
+        }
 
-  const handleBack = () => {
-    navigate(-1);
-  };
+        if (!movieData) {
+          throw new Error('Aucun film sélectionné');
+        }
+
+        setMovie({
+          ...movieData,
+          video_url: movieData.video_url.startsWith('http')
+            ? movieData.video_url
+            : `${BASE_API_URL}${movieData.video_url}`
+        });
+
+      } catch (err) {
+        console.error("Erreur:", err);
+        setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+        navigate('/movies');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifyAccess();
+  }, [navigate, id, location.state]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white text-xl">Chargement...</div>
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-red-500 text-xl">{error}</div>
       </div>
     );
   }
 
   if (!movie) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white text-xl">Film non trouvé</div>
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white text-xl">Film non disponible</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black relative">
-      {/* Video Player */}
-      <div className="relative h-screen">
-        {/* Video placeholder - in real app this would be a video element */}
-        <div className="w-full h-full bg-gray-900 flex items-center justify-center">
-          <img
-            src={movie.thumbnail_url}
-            alt={movie.title}
-            className="w-full h-full object-cover"
-          />
-          
-          {/* Play/Pause Overlay */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <button
-              onClick={togglePlayPause}
-              className="bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-8 rounded-full transition-all duration-200"
-            >
-              {isPlaying ? (
-                <PauseIcon className="h-16 w-16" />
-              ) : (
-                <PlayIcon className="h-16 w-16" />
-              )}
-            </button>
-          </div>
-        </div>
+    <div className="min-h-screen bg-black">
+      <button
+        onClick={() => navigate(-1)}
+        className="absolute top-4 left-4 z-50 bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition text-white"
+      >
+        Retour
+      </button>
 
-        {/* Controls */}
-        <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black to-transparent p-8 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={handleBack}
-                className="text-white hover:text-gray-300 transition-colors"
-              >
-                <ArrowLeftIcon className="h-8 w-8" />
-              </button>
-              
-              <div>
-                <h1 className="text-white text-2xl font-bold">{movie.title}</h1>
-                <p className="text-gray-300">{movie.year} • {movie.rating} • {movie.duration}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <button className="text-white hover:text-gray-300 transition-colors">
-                <SpeakerWaveIcon className="h-6 w-6" />
-              </button>
-            </div>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="mt-4">
-            <div className="w-full bg-gray-600 rounded-full h-1">
-              <div className="bg-red-600 h-1 rounded-full" style={{ width: '30%' }}></div>
-            </div>
-            <div className="flex justify-between text-gray-400 text-sm mt-1">
-              <span>15:32</span>
-              <span>45:20</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Movie Info */}
-      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-90 p-8">
-        <div className="max-w-4xl">
-          <h2 className="text-white text-xl font-bold mb-2">À propos de ce film</h2>
-          <p className="text-gray-300 mb-4">{movie.description}</p>
-          <div className="flex flex-wrap gap-2">
-            {movie.genre.map((genre, index) => (
-              <span key={index} className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm">
-                {genre}
-              </span>
-            ))}
-          </div>
-        </div>
+      <div className="w-full h-screen flex items-center justify-center">
+        <video
+          className="w-full h-full object-contain"
+          autoPlay
+          controls
+          controlsList="nodownload"
+          src={movie.video_url}
+        />
       </div>
     </div>
   );

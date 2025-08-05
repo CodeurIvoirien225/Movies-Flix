@@ -14,7 +14,7 @@ interface User {
   email: string;
   full_name?: string;
   is_admin?: boolean;  // Important !
-  subscription_status?: 'active' | 'inactive' | 'cancelled';
+  is_subscribed?: number;
 }
 
 interface AuthContextType {

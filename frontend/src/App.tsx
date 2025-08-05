@@ -14,12 +14,13 @@ import SearchResults from './pages/SearchResults';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Success from './pages/Success';
-
+import Checkout from './pages/Checkout';
 
 
 
 
 function App() {
+  
   return (
     <AuthProvider>
       <Router>
@@ -46,7 +47,8 @@ function App() {
 
 <Route path="/forgot-password" element={<ForgotPassword />} />
 <Route path="/reset-password/:token" element={<ResetPassword />} />
-<Route path="success" element={<Success />} />
+<Route path="/success" element={<Success />} />
+<Route path="/checkout" element={<Checkout />} />
 
 
 <Route path="/search" element={
@@ -79,5 +81,7 @@ function App() {
     </AuthProvider>
   );
 }
+
+
 
 export default App;

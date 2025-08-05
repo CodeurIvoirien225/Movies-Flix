@@ -4,14 +4,12 @@ import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 import { BASE_API_URL } from '../config';
 
-
-
 interface UserProfile {
   id: string;
   email: string;
   is_admin: boolean;
   full_name?: string;
-  subscription_status?: string;
+  is_subscribed?: string;
 }
 
 const Profile: React.FC = () => {
@@ -25,33 +23,42 @@ const Profile: React.FC = () => {
     email: ''
   });
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await fetch(`${BASE_API_URL}/api/user`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error('Erreur lors du chargement du profil');
+  // Fonction pour récupérer le profil utilisateur
+  const fetchProfile = async () => {
+    try {
+      const response = await fetch(`${BASE_API_URL}/api/user`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
-        
-        const data = await response.json();
-        setUser(data);
-        setFormData({
-          full_name: data.full_name || '',
-          email: data.email
-        });
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+      });
 
+      if (!response.ok) {
+        throw new Error('Erreur lors du chargement du profil');
+      }
+
+      const data = await response.json();
+      setUser(data);
+      setFormData({
+        full_name: data.full_name || '',
+        email: data.email
+      });
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Appel initial
+  useEffect(() => {
     fetchProfile();
+
+    // Vérification régulière du statut toutes les 5 secondes
+    const interval = setInterval(() => {
+      fetchProfile();
+    }, 5000);
+
+    return () => clearInterval(interval); // Nettoyage à la fin
   }, []);
 
   const handleUpdateProfile = async () => {
@@ -76,7 +83,7 @@ const Profile: React.FC = () => {
       setUser(updatedUser);
       setEditMode(false);
       setError(null);
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
     }
   };
@@ -101,7 +108,7 @@ const Profile: React.FC = () => {
     <div className="min-h-screen bg-black text-white p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Mon Profil</h1>
-        
+
         <div className="bg-gray-900 rounded-lg p-6 shadow-lg">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold">Informations personnelles</h2>
@@ -123,12 +130,12 @@ const Profile: React.FC = () => {
                   <span>Valider</span>
                 </button>
                 <button
-  onClick={() => setEditMode(false)}
-  className="flex items-center space-x-1 bg-red-600 hover:bg-red-700 px-3 py-2 rounded-md transition-colors"
->
-  <XMarkIcon className="h-4 w-4" /> {/* Changé de XIcon à XMarkIcon */}
-  <span>Annuler</span>
-</button>
+                  onClick={() => setEditMode(false)}
+                  className="flex items-center space-x-1 bg-red-600 hover:bg-red-700 px-3 py-2 rounded-md transition-colors"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                  <span>Annuler</span>
+                </button>
               </div>
             )}
           </div>
@@ -140,9 +147,9 @@ const Profile: React.FC = () => {
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-white"
-                  disabled // On ne permet pas de modifier l'email dans cet exemple
+                  disabled
                 />
               ) : (
                 <p className="text-white">{user?.email}</p>
@@ -155,7 +162,7 @@ const Profile: React.FC = () => {
                 <input
                   type="text"
                   value={formData.full_name}
-                  onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                   className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-white"
                 />
               ) : (
@@ -177,17 +184,13 @@ const Profile: React.FC = () => {
             <div>
               <label className="block text-gray-400 mb-1">Abonnement</label>
               <div className="flex items-center space-x-2">
-                <span className={`px-2 py-1 rounded-md text-xs font-medium ${
-                  user?.subscription_status === 'active' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-                }`}>
-                  {user?.subscription_status === 'active' ? 'Actif' : 'Inactif'}
-                </span>
-                <Link 
-                  to="/subscription" 
-                  className="text-sm text-blue-400 hover:text-blue-300"
-                >
-                  Gérer l'abonnement
-                </Link>
+              <span className={`px-2 py-1 rounded-md text-xs font-medium ${
+  user?.is_subscribed === 1 ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+}`}>
+  {user?.is_subscribed === 1 ? 'Actif' : 'Inactif'}
+</span>
+
+               
               </div>
             </div>
           </div>
@@ -201,10 +204,7 @@ const Profile: React.FC = () => {
         <div className="mt-8 bg-gray-900 rounded-lg p-6 shadow-lg">
           <h2 className="text-xl font-semibold mb-4">Paramètres de compte</h2>
           <div className="space-y-4">
-            <button className="text-red-400 hover:text-red-300">
-              Changer le mot de passe
-            </button>
-           
+         
           </div>
         </div>
       </div>

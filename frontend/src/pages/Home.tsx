@@ -24,13 +24,14 @@ const Home: React.FC = () => {
     setError(null);
     
     try {
-      const res = await fetch(`${BASE_API_URL}/api/movies`);
+      const res = await fetch('https://movies-flix-backend.onrender.com/api/movies');
       
       if (!res.ok) {
         throw new Error(`Erreur HTTP: ${res.status}`);
       }
 
       const data = await res.json();
+      
       
       // Fonction pour parser correctement le champ genre
       const parseGenre = (genre: any): string[] => {
@@ -171,7 +172,7 @@ const Home: React.FC = () => {
   gradient="from-emerald-500 to-teal-600"
 />
 
-        
+
         <MovieCarousel 
           title="Horreur" 
           movies={getMoviesByCategory('Horreur')} 
@@ -193,10 +194,11 @@ const Home: React.FC = () => {
 
       {/* Footer */}
       <div className="border-t border-gray-800 py-8 px-8 text-center text-gray-400">
-        <p>© {new Date().getFullYear()} Netflix. Tous droits réservés.</p>
+        <p>© {new Date().getFullYear()} Movies-Flix. Tous droits réservés.</p>
       </div>
     </div>
   );
 };
+
 
 export default Home;

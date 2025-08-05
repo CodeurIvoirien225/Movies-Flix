@@ -135,12 +135,46 @@ const MovieDetails: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap gap-4">
-              <button 
-                onClick={() => navigate(`/watch/${movie.id}`)}
-                className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition"
-              >
-                Regarder maintenant
-              </button>
+              
+            <button
+  onClick={async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/signin');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${BASE_API_URL}/api/user`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error('Erreur lors de la récupération des infos utilisateur');
+      const user = await res.json();
+
+      if (!user.is_subscribed) {
+        alert("Vous devez être abonné pour regarder ce film.");
+        navigate('/subscription');
+        return;
+      }
+
+      // S'il est abonné, on va à /watch en passant le film
+      navigate(`/watch/${movie.id}`, {
+        state: { movie },
+      });
+
+    } catch (err) {
+      console.error(err);
+      navigate('/signin');
+    }
+  }}
+  className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition"
+>
+  Regarder maintenant
+</button>
+
              
             </div>
           </div>
@@ -149,5 +183,6 @@ const MovieDetails: React.FC = () => {
     </div>
   );
 };
+
 
 export default MovieDetails;

@@ -27,7 +27,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/login" replace />;
   }
 
-  if (requireSubscription && user.subscription_status !== 'active') {
+  if (requireSubscription && !user.is_subscribed) {
     return <Navigate to="/subscription" replace />;
   }
 

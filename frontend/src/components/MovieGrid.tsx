@@ -1,10 +1,6 @@
 import React from 'react';
 import { Movie } from '../types';
 import MovieCard from './MovieCard';
-import { BASE_API_URL } from '../config';
-
-
-
 
 interface MovieGridProps {
   category?: string;
@@ -23,7 +19,7 @@ const MovieGrid: React.FC<MovieGridProps> = ({ category, searchQuery }) => {
      
       
       try {
-        const url = new URL(`${BASE_API_URL}/api/movies`);
+        const url = new URL('https://movies-flix-backend.onrender.com/api/movies');
         if (category) {
           url.searchParams.append('category', category);
         }
