@@ -41,7 +41,7 @@ const Login: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center justify-center mb-8">
             <PlayIcon className="h-8 w-8 text-red-600 mr-2" />
-            <span className="text-2xl font-bold text-white">Netflix</span>
+            <span className="text-2xl font-bold text-white">Movies-Flix</span>
           </div>
 
           {/* Form */}

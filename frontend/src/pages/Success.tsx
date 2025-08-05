@@ -8,7 +8,7 @@ const Success: React.FC = () => {
         <p className="text-lg text-gray-300 mb-4">
           Merci pour votre achat. Votre abonnement est maintenant actif.
         </p>
-        <p className="mt-2">Vous avez maintenant accès aux films premium 🎉</p>
+        <p className="mt-2">Vous avez maintenant accès aux films .</p>
         <a
           href="/"
           className="inline-block mt-4 px-6 py-2 bg-green-600 hover:bg-green-700 rounded text-white font-semibold transition"
