@@ -1,20 +1,28 @@
 const jwt = require('jsonwebtoken');
 
-function authMiddleware(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+module.exports = (req, res, next) => {
+  const authHeader = req.headers.authorization;
 
-  if (!token) {
-    return res.status(401).json({ message: 'Token manquant' });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token manquant ou invalide' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(403).json({ message: 'Token invalide' });
+  const token = authHeader.split(' ')[1];
 
-    req.user = decoded; // ✅ decoded contient email et userId
-    console.log('✅ Utilisateur authentifié :', decoded); // Pour test
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // ⚠️ On ne garde que les infos minimales du token
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+      is_admin: decoded.is_admin
+      // ⚠️ PAS de is_subscribed ici, on ira le chercher dans la BDD
+    };
+
+    console.log("✅ Utilisateur authentifié :", req.user);
     next();
-  });
-}
-
-module.exports = authMiddleware;
+  } catch (err) {
+    return res.status(401).json({ error: 'Token invalide' });
+  }
+};

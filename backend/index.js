@@ -10,6 +10,8 @@ const multer = require('multer'); // Pour la gestion des fichiers
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const bodyParser = require('body-parser');
+
 
 
 
@@ -30,6 +32,11 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const movieRoutes = require('./routes/movies'); // Note: moviesRouter est le même, on peut utiliser movieRoutes
 const pool = require('./db'); // Assurez-vous que votre fichier db.js exporte 'pool'
+const authMiddleware = require('./middleware/authMiddleware');
+const verifyPayment = require('./middleware/verifyPayment');
+
+
+
 
 // --- Initialisation de l'application Express ---
 const app = express();
@@ -65,6 +72,10 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Pour une configuration plus sécurisée en production, vous pourriez spécifier 'origin'
 app.use(cors());
 
+
+const webhookRoute = require('./webhook');
+app.use('/webhook', webhookRoute);
+
 // Parser le corps des requêtes en JSON
 app.use(express.json());
 
@@ -78,12 +89,13 @@ app.use('/api', authRoutes);
 app.use('/api/user', userRoutes);
 
 // Routes des films (ex: /api/movies, /api/movies/:id)
-app.use('/api/movies', movieRoutes); // Utilisons movieRoutes directement pour /api/movies
-
+app.use('/api/movies', movieRoutes);
 // Route racine simple pour vérifier que l'API est en ligne
 app.get('/', (req, res) => {
   res.send('API Netflix est en ligne');
 });
+
+
 
 // --- Routes de gestion des films spécifiques (si elles ne sont pas dans movieRoutes) ---
 // Si ces routes étaient déjà définies dans votre fichier './routes/movies.js' et exportées via movieRoutes,
@@ -295,6 +307,46 @@ app.post('/reset-password/:token', async (req, res) => {
     console.error('Erreur reset-password (POST) :', error);
     res.status(400).json({ error: 'Lien invalide ou expiré.' });
   }
+});
+
+
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+app.post('/create-checkout-session', async (req, res) => {
+  const { price, email } = req.body; // ✅ Ajout de "email"
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      customer_email: email, // ✅ Utilisation directe
+
+      line_items: [
+        {
+          price_data: {
+            currency: 'xaf', // FCFA
+            product_data: {
+              name: 'Abonnement Standard',
+            },
+            unit_amount: 2000,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: 'http://localhost:5173/success',
+      cancel_url: 'http://localhost:5173/subscription',
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: 'Erreur création session' });
+  }
+});
+
+
+app.get('/api/verify-token', authMiddleware, (req, res) => {
+  res.json({ valid: true, user: req.user });
 });
 
 

@@ -5,8 +5,10 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 router.get('/', authMiddleware, async (req, res) => {
   const email = req.user.email;
-  const [rows] = await pool.query('SELECT id, email, full_name, is_admin FROM users WHERE email = ?', [email]);
+  const [rows] = await pool.query('SELECT id, email, full_name, is_admin, is_subscribed FROM users WHERE email = ?', [email]);
   if (rows.length === 0) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+  console.log("✅ Données utilisateur récupérées depuis la BDD :", rows[0]);
+
   res.json(rows[0]);
 });
 
@@ -15,8 +17,10 @@ router.put('/', authMiddleware, async (req, res) => {
   const email = req.user.email;
   const [result] = await pool.query('UPDATE users SET full_name = ? WHERE email = ?', [full_name, email]);
   if (result.affectedRows === 0) return res.status(404).json({ error: 'Utilisateur non trouvé' });
-  const [updated] = await pool.query('SELECT id, email, full_name, is_admin FROM users WHERE email = ?', [email]);
-  res.json(updated[0]);
+  const [updated] = await pool.query('SELECT id, email, full_name, is_admin, is_subscribed FROM users WHERE email = ?', [email]);
+
+    res.json(updated[0]);
 });
+
 
 module.exports = router;
