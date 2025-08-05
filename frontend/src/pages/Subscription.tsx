@@ -126,9 +126,7 @@ const Subscription = () => {
         </div>
 
         <div className="mt-12 text-center">
-          <p className="text-gray-400 text-sm">
-            Vous pouvez annuler votre abonnement à tout moment. Aucun engagement.
-          </p>
+          
         </div>
       </div>
     </div>
